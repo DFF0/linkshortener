@@ -50,4 +50,9 @@ class Db
 
         return $stmt;
     }
+
+    public function lastInsertId($name = null)
+    {
+        return self::$_instance->lastInsertId($name);
+    }
 }

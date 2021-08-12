@@ -7,7 +7,13 @@ if ( isset($_POST['link']) && !empty($_POST['link']) ) {
     $linkShortener = new Linkshortener();
 
     if (filter_var($_POST['link'], FILTER_VALIDATE_URL)) {
-        $resultLink = $linkShortener->getShortLink($_POST['link']);
+        $result = $linkShortener->getShortLink($_POST['link']);
+
+        if ( $result['success'] ) {
+            $resultLink = $result['data']['hash'];
+        } else {
+            $messageRed = $result['error']['message'];
+        }
     } else {
         $messageRed = "Не валидный URL";
     }

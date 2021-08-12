@@ -21,14 +21,19 @@ class Linkshortener
         $alphabet = "0123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
         $size = strlen($alphabet) - 1;
         $hash = '';
-        while($length--) {
+        while ( $length-- ) {
             $hash .= $alphabet[random_int(0, $size)];
         }
 
         return $hash;
     }
 
-    protected function saveLink($hash, $url)
+    /**
+     * @param string $hash
+     * @param string $url
+     * @return array
+     */
+    protected function saveLink(string $hash, string $url) : array
     {
         $this->db->query(
             "INSERT INTO `links` SET `hash` = :hash, `url` = :url",
@@ -37,6 +42,21 @@ class Linkshortener
                 'url'  => $url
             ]
         );
+
+        if ( $this->db->lastInsertId() ) {
+            $result = [
+                'success' => true,
+            ];
+        } else {
+            $result = [
+                'success' => false,
+                'error' => [
+                    'message' => 'Не удалось сделать запись в БД',
+                ]
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -52,7 +72,7 @@ class Linkshortener
     }
 
     /**
-     * Получить из БД полный урл по хешу
+     * Получить из БД хеш по полному урл
      * @param string $url
      * @return mixed
      */
@@ -66,19 +86,32 @@ class Linkshortener
     /**
      *
      * @param string $url
-     * @return string
+     * @return bool[]
      * @throws Exception
      */
-    public function getShortLink( string $url ): string
+    public function getShortLink( string $url ): array
     {
         $hash = $this->getHashByUrl( $url );
 
         if ( empty($hash) ) {
-            $hash = $this->generateHash( 6 );
+            for ( $i = 5; $i <= 9; $i++ ) {
+                $hash = $this->generateHash( $i );
 
-            $this->saveLink( $hash, $url );
+                $checkUrl = $this->getUrlByHash($hash);
+
+                if ( empty($checkUrl) ) break;
+            }
+
+            $result = $this->saveLink( $hash, $url );
+
+            if ( !$result['success'] ) {
+                return $result;
+            }
         }
 
-        return $hash;
+        return [
+            'success' => true,
+            'data' => ['hash' => $hash],
+        ];
     }
 }
